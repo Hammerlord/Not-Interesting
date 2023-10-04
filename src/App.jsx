@@ -1,5 +1,6 @@
 import { createUseStyles } from "react-jss";
 import MergeLinkedLists from "./MergeLinkedLists";
+import Heap from "./Heap";
 
 const useStyles = createUseStyles({
     root: {
@@ -21,7 +22,7 @@ const App = () => {
                 <h1>Not Interesting</h1>
                 <h3>A collection of things that are not interesting.</h3>
                 <hr />
-                <MergeLinkedLists />
+                <Heap />
             </div>
         </div>
     );
