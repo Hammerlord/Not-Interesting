@@ -1,5 +1,4 @@
 import { createUseStyles } from "react-jss";
-import MergeLinkedLists from "./MergeLinkedLists";
 import Heap from "./Heap";
 
 const useStyles = createUseStyles({

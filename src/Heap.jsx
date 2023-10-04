@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createUseStyles } from "react-jss";
 
 const makeMinHeap = () => {
@@ -96,9 +96,6 @@ const useStyles = createUseStyles({
         verticalAlign: "top",
         fontWeight: 600,
     },
-    arrayContainer: {
-        marginBottom: "16px",
-    },
     arrayItem: {
         display: "inline-block",
         margin: "4px",
@@ -106,7 +103,6 @@ const useStyles = createUseStyles({
         textAlign: "center",
         verticalAlign: "top",
     },
-    arrayItemIndex: {},
     arrayItemInner: {
         border: "1px solid rgba(0, 0, 0, 0.2)",
         verticalAlign: "top",
@@ -117,58 +113,86 @@ const useStyles = createUseStyles({
     },
 });
 
+const numItems = 12;
+
 const Heap = () => {
+    const [, setInit] = useState(false);
     const [heap] = useState(() => {
         const createdHeap = makeMinHeap();
-        Array.from({ length: 12 }).forEach(() => {
-            const int = getRandomInt(0, 15);
+        Array.from({ length: numItems }).forEach(() => {
+            const int = getRandomInt(0, numItems);
             createdHeap.add(int);
         });
 
         return createdHeap;
     });
+    const canvasRef = useRef();
+
+    useEffect(() => {
+        // Used to trigger rerender for ref
+        setInit(true);
+    }, []);
 
     const classes = useStyles();
-
-    const heapLevels = (() => {
-        const minHeap = heap.getHeap();
-        if (minHeap.length === 0) {
-            return [[]];
-        }
-
-        const levels = [];
-
-        minHeap.forEach((item, i) => {
-            if (isPowerOfTwo(i + 1)) {
-                levels.push([]);
-            }
-
-            levels[levels.length - 1].push(item);
-        });
-
-        return levels;
-    })();
+    const ySpacing = 60;
+    const xSpacing = 50;
+    const heapArr = heap.getHeap();
+    const width = (canvasRef?.current?.getBoundingClientRect && canvasRef?.current?.getBoundingClientRect()?.width) / 2 || 500;
+    let level = 0;
 
     return (
-        <div className={classes.root}>
+        <div className={classes.root} ref={canvasRef}>
             <h3>Heap</h3>
             <div className={classes.arrayContainer}>
-                {heap.getHeap().map((item, i) => (
-                    <div className={classes.arrayItem}>
+                {heapArr.map((item, i) => (
+                    <div className={classes.arrayItem} key={i}>
                         <div className={classes.arrayItemIndex}>{i}</div>
                         <div className={classes.arrayItemInner}>{item}</div>
                     </div>
                 ))}
             </div>
-            {heapLevels.map((level, i) => (
-                <div key={i}>
-                    {level.map((item, i) => (
-                        <div key={i} className={classes.node}>
-                            {item}
-                        </div>
-                    ))}
-                </div>
-            ))}
+            <svg width="100%" height="100%">
+                <g transform="translate(50,50)">
+                    {heapArr.map((n, i) => {
+                        if (isPowerOfTwo(i + 1)) {
+                            ++level;
+                        }
+
+                        const lChild = heap.getLChildIndex(i);
+                        const rChild = heap.getRChildIndex(i);
+                        const levelAdjustment = width + xSpacing / 2 - (xSpacing * Math.pow(2, level)) / 1.3333;
+                        const x = i * xSpacing + levelAdjustment;
+                        const nextLevelAdjustment = width + xSpacing / 2 - (xSpacing * Math.pow(2, level + 1)) / 1.3333;
+                        const y = level * ySpacing;
+                        return (
+                            <g key={i}>
+                                {heapArr[lChild] !== undefined && (
+                                    <line
+                                        stroke="#444"
+                                        x1={x}
+                                        y1={y}
+                                        x2={lChild * xSpacing + nextLevelAdjustment}
+                                        y2={(level + 1) * ySpacing}
+                                    />
+                                )}
+                                {heapArr[rChild] !== undefined && (
+                                    <line
+                                        stroke="#444"
+                                        x1={x}
+                                        y1={y}
+                                        x2={rChild * xSpacing + nextLevelAdjustment}
+                                        y2={(level + 1) * ySpacing}
+                                    />
+                                )}
+                                <circle stroke={"#444"} fill="white" r="16" cx={x} cy={y}></circle>
+                                <text color="black" x={x} y={y + 5} textAnchor="middle">
+                                    {n}
+                                </text>
+                            </g>
+                        );
+                    })}
+                </g>
+            </svg>
         </div>
     );
 };
