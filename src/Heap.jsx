@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createUseStyles } from "react-jss";
-import { addItem, getLChildIndex, getRChildIndex, singleSwapUp } from "./heapUtils";
+import { addItem, getLChildIndex, getRChildIndex, hasLargerAncestor, singleSwapUp } from "./heapUtils";
 
 export const getRandomInt = (min, max) => {
     min = Math.ceil(min);
@@ -65,9 +65,8 @@ const Heap = () => {
             const newHeap = [...heap];
             indicesToSwapUp.forEach((i) => {
                 const newIndex = singleSwapUp(newHeap, i);
-                if (newIndex !== i) {
-                    // If it moved, then check if it needs to be heapified again
-                    // Known issue: heap can be stuck in the wrong order when multiple numbers are added and one swaps before the other
+                const recentlySwapped = newIndex !== i; // Keep the highlight for a moment longer when it reaches the end
+                if (hasLargerAncestor(newHeap, newIndex) || recentlySwapped) {
                     newIndicesToHeap.push(newIndex);
                 }
             });

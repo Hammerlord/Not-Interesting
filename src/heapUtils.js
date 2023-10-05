@@ -66,3 +66,15 @@ export const singleSwapUp = (heap, i) => {
 
     return i;
 };
+
+export const hasLargerAncestor = (heap, i) => {
+    let j = i;
+    while (j > 0) {
+        j = getParentIndex(j);
+        if (heap[j] > heap[i]) {
+            return true;
+        }
+    }
+
+    return false;
+};
