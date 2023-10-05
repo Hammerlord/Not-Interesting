@@ -137,8 +137,12 @@ const Heap = () => {
     const ySpacing = 60;
     const xSpacing = 50;
     const heapArr = heap.getHeap();
-    const width = (canvasRef?.current?.getBoundingClientRect && canvasRef?.current?.getBoundingClientRect()?.width) / 2 || 500;
+    const halfAreaWidth = (canvasRef?.current?.getBoundingClientRect && canvasRef?.current?.getBoundingClientRect()?.width) / 2 || 500;
     let level = 0;
+
+    const getCenteringAdjustment = (lvl) => {
+        return halfAreaWidth + xSpacing * 1.5 - (xSpacing * Math.pow(2, lvl)) / 1.3333;
+    };
 
     return (
         <div className={classes.root} ref={canvasRef}>
@@ -152,7 +156,7 @@ const Heap = () => {
                 ))}
             </div>
             <svg width="100%" height="100%">
-                <g transform="translate(50,50)">
+                <g>
                     {heapArr.map((n, i) => {
                         if (isPowerOfTwo(i + 1)) {
                             ++level;
@@ -160,9 +164,8 @@ const Heap = () => {
 
                         const lChild = heap.getLChildIndex(i);
                         const rChild = heap.getRChildIndex(i);
-                        const levelAdjustment = width + xSpacing / 2 - (xSpacing * Math.pow(2, level)) / 1.3333;
-                        const x = i * xSpacing + levelAdjustment;
-                        const nextLevelAdjustment = width + xSpacing / 2 - (xSpacing * Math.pow(2, level + 1)) / 1.3333;
+                        const x = i * xSpacing + getCenteringAdjustment(level);
+                        const nextLevelAdjustment = getCenteringAdjustment(level + 1);
                         const y = level * ySpacing;
                         return (
                             <g key={i}>
