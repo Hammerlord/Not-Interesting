@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createUseStyles } from "react-jss";
-import { addItem, getLChildIndex, getRChildIndex, hasLargerAncestor, singleSwapUp } from "./heapUtils";
+import { addItem, getLChildIndex, getRChildIndex, hasLargerAncestor, pop, singleSwapDown, singleSwapUp } from "./heapUtils";
 
 export const getRandomInt = (min, max) => {
     min = Math.ceil(min);
@@ -45,7 +45,7 @@ const useStyles = createUseStyles({
 const numItems = 5;
 
 const Heap = () => {
-    const [indicesToSwapUp, setIndicesToSwapUp] = useState([]);
+    const [indicesToSwap, setIndicesToSwap] = useState([]); // { direction: 1 | -1, i: number }
     const [heap, setHeap] = useState([]);
     const canvasRef = useRef();
 
@@ -60,23 +60,34 @@ const Heap = () => {
     }, []);
 
     useEffect(() => {
+        if (indicesToSwap.length === 0) {
+            return;
+        }
         const interval = setInterval(() => {
             const newIndicesToHeap = [];
             const newHeap = [...heap];
-            indicesToSwapUp.forEach((i) => {
-                const newIndex = singleSwapUp(newHeap, i);
-                const recentlySwapped = newIndex !== i; // Keep the highlight for a moment longer when it reaches the end
-                if (hasLargerAncestor(newHeap, newIndex) || recentlySwapped) {
-                    newIndicesToHeap.push(newIndex);
+            indicesToSwap.forEach((item) => {
+                const { direction, i } = item;
+                if (direction === -1) {
+                    const newIndex = singleSwapUp(newHeap, i);
+                    const recentlySwapped = newIndex !== i; // Keep the highlight for a moment longer when it reaches the end
+                    if (hasLargerAncestor(newHeap, newIndex) || recentlySwapped) {
+                        newIndicesToHeap.push({ direction, i: newIndex });
+                    }
+                } else {
+                    const newIndex = singleSwapDown(newHeap, i);
+                    if (newIndex !== i) {
+                        newIndicesToHeap.push({ direction, i: newIndex });
+                    }
                 }
             });
 
             setHeap(newHeap);
-            setIndicesToSwapUp(newIndicesToHeap);
+            setIndicesToSwap(newIndicesToHeap);
         }, 500);
 
         return () => clearInterval(interval);
-    }, [indicesToSwapUp, heap]);
+    }, [indicesToSwap, heap]);
 
     const classes = useStyles();
     const ySpacing = 60;
@@ -93,18 +104,30 @@ const Heap = () => {
         const newHeap = [...heap, newNumber];
         const i = newHeap.length - 1;
         setHeap(newHeap);
-        setIndicesToSwapUp([...indicesToSwapUp, i]);
+        setIndicesToSwap([...indicesToSwap, { direction: -1, i }]);
+    };
+
+    const onClickPop = () => {
+        const newHeap = pop(heap);
+        setHeap(newHeap);
+        setIndicesToSwap([...indicesToSwap, { direction: 1, i: 0 }]);
     };
 
     return (
         <div className={classes.root} ref={canvasRef}>
             <h3>Heap</h3>
             <button onClick={onClickAddNumber}>Add Number</button>
+            <button onClick={onClickPop}>Pop</button>
             <div className={classes.arrayContainer}>
                 {heap.map((item, i) => (
                     <div className={classes.arrayItem} key={i}>
                         <div className={classes.arrayItemIndex}>{i}</div>
-                        <div className={classes.arrayItemInner}>{item}</div>
+                        <div
+                            className={classes.arrayItemInner}
+                            style={{ backgroundColor: indicesToSwap.find(({ i: j }) => i === j) ? "yellow" : "white" }}
+                        >
+                            {item}
+                        </div>
                     </div>
                 ))}
             </div>
@@ -142,7 +165,7 @@ const Heap = () => {
                                 )}
                                 <circle
                                     stroke={"#444"}
-                                    fill={indicesToSwapUp.includes(i) ? "yellow" : "white"}
+                                    fill={indicesToSwap.find(({ i: j }) => i === j) ? "yellow" : "white"}
                                     r="16"
                                     cx={x}
                                     cy={y}

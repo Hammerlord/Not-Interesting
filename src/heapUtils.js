@@ -17,7 +17,7 @@ export const getRChildIndex = (i) => {
     return 2 * i + 2;
 };
 
-const minHeapify = (arr, i) => {
+export const singleSwapDown = (arr, i) => {
     const l = getLChildIndex(i);
     const r = getRChildIndex(i);
     let smallest = i;
@@ -30,10 +30,8 @@ const minHeapify = (arr, i) => {
     }
 
     if (smallest !== i) {
-        const temp = arr[i];
-        arr[i] = arr[smallest];
-        arr[smallest] = temp;
-        minHeapify(smallest);
+        swap({ arr, i, j: smallest });
+        return smallest;
     }
 };
 
@@ -47,15 +45,13 @@ export const addItem = (arr, item) => {
     }
 };
 
-export const removeMin = (arr) => {
-    if (arr.length === 0) {
-        return null;
+export const pop = (arr) => {
+    const newArr = [...arr];
+    if (newArr.length > 0) {
+        newArr[0] = newArr.pop();
     }
 
-    const root = arr[0];
-    arr[0] = arr[arr.length - 1];
-    minHeapify(arr, 0);
-    return root;
+    return newArr;
 };
 
 export const singleSwapUp = (heap, i) => {
