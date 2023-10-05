@@ -1,77 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createUseStyles } from "react-jss";
-
-const makeMinHeap = () => {
-    const arr = [];
-
-    const getLChildIndex = (i) => {
-        return 2 * i + 1;
-    };
-
-    const getRChildIndex = (i) => {
-        return 2 * i + 2;
-    };
-
-    const getParentIndex = (i) => {
-        return Math.floor((i - 1) / 2);
-    };
-
-    const minHeapify = (i) => {
-        const l = getLChildIndex(i);
-        const r = getRChildIndex(i);
-        let smallest = i;
-        if (arr[l] < arr[i]) {
-            smallest = l;
-        }
-
-        if (arr[r] < arr[smallest]) {
-            smallest = r;
-        }
-
-        if (smallest !== i) {
-            const temp = arr[i];
-            arr[i] = arr[smallest];
-            arr[smallest] = temp;
-            minHeapify(smallest);
-        }
-    };
-
-    const removeMin = () => {
-        if (arr.length === 0) {
-            return null;
-        }
-
-        const root = arr[0];
-        arr[0] = arr[arr.length - 1];
-        minHeapify(0);
-        return root;
-    };
-
-    const swap = (i, j) => {
-        const temp = arr[i];
-        arr[i] = arr[j];
-        arr[j] = temp;
-    };
-
-    const add = (item) => {
-        arr.push(item);
-        let i = arr.length - 1;
-
-        while (i > 0 && arr[getParentIndex(i)] > arr[i]) {
-            swap(getParentIndex(i), i);
-            i = getParentIndex(i);
-        }
-    };
-
-    return {
-        getHeap: () => arr,
-        add,
-        removeMin,
-        getLChildIndex,
-        getRChildIndex,
-        getParentIndex,
-    };
-};
+import { addItem, getLChildIndex, getRChildIndex, singleSwapUp } from "./heapUtils";
 
 export const getRandomInt = (min, max) => {
     min = Math.ceil(min);
@@ -113,30 +42,46 @@ const useStyles = createUseStyles({
     },
 });
 
-const numItems = 12;
+const numItems = 5;
 
 const Heap = () => {
-    const [, setInit] = useState(false);
-    const [heap] = useState(() => {
-        const createdHeap = makeMinHeap();
-        Array.from({ length: numItems }).forEach(() => {
-            const int = getRandomInt(0, numItems);
-            createdHeap.add(int);
-        });
-
-        return createdHeap;
-    });
+    const [indicesToSwapUp, setIndicesToSwapUp] = useState([]);
+    const [heap, setHeap] = useState([]);
     const canvasRef = useRef();
 
     useEffect(() => {
-        // Used to trigger rerender for ref
-        setInit(true);
+        const createdHeap = [];
+        Array.from({ length: numItems }).forEach(() => {
+            const int = getRandomInt(0, 15);
+            addItem(createdHeap, int);
+        });
+
+        setHeap(createdHeap);
     }, []);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const newIndicesToHeap = [];
+            const newHeap = [...heap];
+            indicesToSwapUp.forEach((i) => {
+                const newIndex = singleSwapUp(newHeap, i);
+                if (newIndex !== i) {
+                    // If it moved, then check if it needs to be heapified again
+                    // Known issue: heap can be stuck in the wrong order when multiple numbers are added and one swaps before the other
+                    newIndicesToHeap.push(newIndex);
+                }
+            });
+
+            setHeap(newHeap);
+            setIndicesToSwapUp(newIndicesToHeap);
+        }, 500);
+
+        return () => clearInterval(interval);
+    }, [indicesToSwapUp, heap]);
 
     const classes = useStyles();
     const ySpacing = 60;
     const xSpacing = 50;
-    const heapArr = heap.getHeap();
     const halfAreaWidth = (canvasRef?.current?.getBoundingClientRect && canvasRef?.current?.getBoundingClientRect()?.width) / 2 || 500;
     let level = 0;
 
@@ -144,11 +89,20 @@ const Heap = () => {
         return halfAreaWidth + xSpacing * 1.5 - (xSpacing * Math.pow(2, lvl)) / 1.3333;
     };
 
+    const onClickAddNumber = () => {
+        const newNumber = getRandomInt(0, heap.length);
+        const newHeap = [...heap, newNumber];
+        const i = newHeap.length - 1;
+        setHeap(newHeap);
+        setIndicesToSwapUp([...indicesToSwapUp, i]);
+    };
+
     return (
         <div className={classes.root} ref={canvasRef}>
             <h3>Heap</h3>
+            <button onClick={onClickAddNumber}>Add Number</button>
             <div className={classes.arrayContainer}>
-                {heapArr.map((item, i) => (
+                {heap.map((item, i) => (
                     <div className={classes.arrayItem} key={i}>
                         <div className={classes.arrayItemIndex}>{i}</div>
                         <div className={classes.arrayItemInner}>{item}</div>
@@ -157,19 +111,19 @@ const Heap = () => {
             </div>
             <svg width="100%" height="100%">
                 <g>
-                    {heapArr.map((n, i) => {
+                    {heap.map((n, i) => {
                         if (isPowerOfTwo(i + 1)) {
                             ++level;
                         }
 
-                        const lChild = heap.getLChildIndex(i);
-                        const rChild = heap.getRChildIndex(i);
+                        const lChild = getLChildIndex(i);
+                        const rChild = getRChildIndex(i);
                         const x = i * xSpacing + getCenteringAdjustment(level);
                         const nextLevelAdjustment = getCenteringAdjustment(level + 1);
                         const y = level * ySpacing;
                         return (
                             <g key={i}>
-                                {heapArr[lChild] !== undefined && (
+                                {heap[lChild] !== undefined && (
                                     <line
                                         stroke="#444"
                                         x1={x}
@@ -178,7 +132,7 @@ const Heap = () => {
                                         y2={(level + 1) * ySpacing}
                                     />
                                 )}
-                                {heapArr[rChild] !== undefined && (
+                                {heap[rChild] !== undefined && (
                                     <line
                                         stroke="#444"
                                         x1={x}
@@ -187,7 +141,13 @@ const Heap = () => {
                                         y2={(level + 1) * ySpacing}
                                     />
                                 )}
-                                <circle stroke={"#444"} fill="white" r="16" cx={x} cy={y}></circle>
+                                <circle
+                                    stroke={"#444"}
+                                    fill={indicesToSwapUp.includes(i) ? "yellow" : "white"}
+                                    r="16"
+                                    cx={x}
+                                    cy={y}
+                                ></circle>
                                 <text color="black" x={x} y={y + 5} textAnchor="middle">
                                     {n}
                                 </text>
