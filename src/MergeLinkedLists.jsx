@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createUseStyles } from "react-jss";
+import { getLChildIndex, getParentIndex, getRChildIndex, swap } from "./heapUtils";
 
 export const getRandomInt = (min, max) => {
     min = Math.ceil(min);
@@ -40,17 +41,42 @@ const linkedListToArr = (linkedList) => {
     return arr;
 };
 
-const findLowestIndex = (linkedLists) => {
-    let index = null;
-    let lowest = Infinity;
-    linkedLists.forEach((list, i) => {
-        if (list?.value < lowest) {
-            index = i;
-            lowest = list.value;
-        }
-    });
+const addNodeToHeap = (heap, item) => {
+    heap.push(item);
+    let i = heap.length - 1;
 
-    return index;
+    while (i > 0 && heap[getParentIndex(i)].value > heap[i].value) {
+        swap({ arr: heap, i, j: getParentIndex(i) });
+        i = getParentIndex(i);
+    }
+};
+
+const popNode = (arr) => {
+    const popped = arr[0];
+    if (arr.length > 0) {
+        arr[0] = arr[arr.length - 1];
+        arr.pop();
+        heapify(arr, 0);
+        return popped;
+    }
+};
+
+const heapify = (arr, i) => {
+    const l = getLChildIndex(i);
+    const r = getRChildIndex(i);
+    let smallest = i;
+    if (arr[l]?.value < arr[i]?.value) {
+        smallest = l;
+    }
+
+    if (arr[r]?.value < arr[smallest]?.value) {
+        smallest = r;
+    }
+
+    if (smallest !== i) {
+        swap({ arr, i, j: smallest });
+        heapify(arr, smallest);
+    }
 };
 
 const useStyles = createUseStyles({
@@ -97,27 +123,31 @@ const MergeLinkedLists = () => {
     const [listMinSize, setListMinSize] = useState(15);
     const [listMaxSize, setListMaxSize] = useState(15);
     const [playbackSpeed, setPlaybackSpeed] = useState(50);
-    const [linkedLists, setLinkedLists] = useState(
-        Array.from({ length: numLists }).map(() => createSortedLinkedList(listMinSize, listMaxSize))
-    );
+    const [linkedLists, setLinkedLists] = useState(() => {
+        const lists = [];
+        Array.from({ length: numLists }).forEach(() => addNodeToHeap(lists, createSortedLinkedList(listMinSize, listMaxSize)));
+        return lists;
+    });
     const [merged, setMerged] = useState(null);
     const [mergedCurrent, setMergedCurrent] = useState(null);
     const classes = useStyles();
 
     useEffect(() => {
         const interval = setInterval(() => {
-            const lowestIndex = findLowestIndex(linkedLists);
-            if (lowestIndex === null) {
+            const newLinkedLists = [...linkedLists];
+            const lowest = popNode(newLinkedLists);
+            if (!lowest) {
                 clearInterval(interval);
                 return;
             }
 
-            const node = linkedLists[lowestIndex];
-            const newLinkedLists = [...linkedLists];
-            newLinkedLists[lowestIndex] = node.next;
+            if (lowest.next) {
+                addNodeToHeap(newLinkedLists, lowest.next);
+            }
+
             setLinkedLists(newLinkedLists);
 
-            const nodeToAdd = { value: node.value, next: null };
+            const nodeToAdd = { value: lowest.value, next: null };
             if (!merged) {
                 setMerged(nodeToAdd);
                 setMergedCurrent(nodeToAdd);

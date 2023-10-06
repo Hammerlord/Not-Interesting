@@ -48,7 +48,8 @@ export const addItem = (arr, item) => {
 export const pop = (arr) => {
     const newArr = [...arr];
     if (newArr.length > 0) {
-        newArr[0] = newArr.pop();
+        newArr[0] = newArr[newArr.length - 1];
+        newArr.pop();
     }
 
     return newArr;
