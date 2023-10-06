@@ -210,7 +210,9 @@ const MergeLinkedLists = () => {
     };
 
     const onReset = () => {
-        setLinkedLists(Array.from({ length: numLists }).map(() => createSortedLinkedList(listMinSize, listMaxSize)));
+        const lists = [];
+        Array.from({ length: numLists }).forEach(() => addNodeToHeap(lists, createSortedLinkedList(listMinSize, listMaxSize)));
+        setLinkedLists(lists);
         setMerged(null);
         setMergedCurrent(null);
     };
