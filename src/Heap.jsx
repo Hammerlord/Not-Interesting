@@ -1,12 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createUseStyles } from "react-jss";
 import { addItem, getLChildIndex, getRChildIndex, hasLargerAncestor, pop, singleSwapDown, singleSwapUp } from "./heapUtils";
-
-export const getRandomInt = (min, max) => {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-};
+import { getRandomInt } from "./utils";
 
 const isPowerOfTwo = (n) => n > 0 && !(n & (n - 1));
 

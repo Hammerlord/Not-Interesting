@@ -1,12 +1,7 @@
 import { useEffect, useState } from "react";
 import { createUseStyles } from "react-jss";
 import { getLChildIndex, getParentIndex, getRChildIndex, swap } from "./heapUtils";
-
-export const getRandomInt = (min, max) => {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-};
+import { getRandomInt } from "./utils";
 
 const createSortedNumbers = (minSize, maxSize) => {
     return Array.from({ length: getRandomInt(minSize, maxSize) })
