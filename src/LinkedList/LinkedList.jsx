@@ -1,7 +1,7 @@
-/* eslint-disable react/prop-types */
 import { useState } from "react";
-import { getRandomInt } from "./utils";
+import { getRandomInt } from "../utils";
 import { createUseStyles } from "react-jss";
+import ListNodes from "./ListNodes";
 
 const createLinkedList = (length = 15) => {
     let head = null;
@@ -75,31 +75,6 @@ const LinkedListExample = () => {
                 <ListNodes node={list} i={0} />
             </div>
         </div>
-    );
-};
-
-const nodeStyles = createUseStyles({
-    node: {
-        display: "inline-block",
-        width: "15px",
-        margin: "10px",
-        padding: "10px",
-        textAlign: "center",
-        border: "1px solid rgba(0, 0, 0, 0.2)",
-        borderRadius: "30px",
-        verticalAlign: "top",
-    },
-});
-
-const ListNodes = ({ node, i }) => {
-    const classes = nodeStyles();
-    return (
-        <>
-            <div className={classes.node} key={i}>
-                {node.val}
-            </div>
-            {node.next && <ListNodes node={node.next} key={i + 1} />}
-        </>
     );
 };
 

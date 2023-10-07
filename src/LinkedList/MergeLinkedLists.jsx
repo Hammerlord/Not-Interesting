@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { createUseStyles } from "react-jss";
-import { getLChildIndex, getParentIndex, getRChildIndex, swap } from "./heapUtils";
-import { getRandomInt } from "./utils";
+import { getLChildIndex, getParentIndex, getRChildIndex, swap } from "../heapUtils";
+import { getRandomInt } from "../utils";
+import ListNodes from "./ListNodes";
 
 const createSortedNumbers = (minSize, maxSize) => {
     return Array.from({ length: getRandomInt(minSize, maxSize) })
@@ -16,10 +17,10 @@ const createSortedLinkedList = (minSize, maxSize) => {
     while (arr.length) {
         const arrVal = arr.shift();
         if (!root) {
-            root = { value: arrVal, next: current };
+            root = { val: arrVal, next: current };
             current = root;
         } else {
-            current.next = { value: arrVal, next: null };
+            current.next = { val: arrVal, next: null };
             current = current.next;
         }
     }
@@ -27,20 +28,11 @@ const createSortedLinkedList = (minSize, maxSize) => {
     return root;
 };
 
-const linkedListToArr = (linkedList) => {
-    const arr = [];
-    while (typeof linkedList?.value === "number") {
-        arr.push(linkedList.value);
-        linkedList = linkedList.next;
-    }
-    return arr;
-};
-
 const addNodeToHeap = (heap, item) => {
     heap.push(item);
     let i = heap.length - 1;
 
-    while (i > 0 && heap[getParentIndex(i)].value > heap[i].value) {
+    while (i > 0 && heap[getParentIndex(i)].val > heap[i].val) {
         swap({ arr: heap, i, j: getParentIndex(i) });
         i = getParentIndex(i);
     }
@@ -60,11 +52,11 @@ const heapify = (arr, i) => {
     const l = getLChildIndex(i);
     const r = getRChildIndex(i);
     let smallest = i;
-    if (arr[l]?.value < arr[i]?.value) {
+    if (arr[l]?.val < arr[i]?.val) {
         smallest = l;
     }
 
-    if (arr[r]?.value < arr[smallest]?.value) {
+    if (arr[r]?.val < arr[smallest]?.val) {
         smallest = r;
     }
 
@@ -142,7 +134,7 @@ const MergeLinkedLists = () => {
 
             setLinkedLists(newLinkedLists);
 
-            const nodeToAdd = { value: lowest.value, next: null };
+            const nodeToAdd = { val: lowest.val, next: null };
             if (!merged) {
                 setMerged(nodeToAdd);
                 setMergedCurrent(nodeToAdd);
@@ -240,20 +232,12 @@ const MergeLinkedLists = () => {
             </label>
             {linkedLists.map((list, i) => (
                 <div key={i} className={classes.list}>
-                    {linkedListToArr(list).map((val, i) => (
-                        <div key={i} className={classes.node} style={{ backgroundColor: getColor(val) }}>
-                            {val}
-                        </div>
-                    ))}
+                    <ListNodes node={list} backgroundColor={getColor} />
                 </div>
             ))}
             <div className={classes.merged}>Merged</div>
             <div className={classes.list}>
-                {linkedListToArr(merged).map((val, i) => (
-                    <div key={i} className={classes.node} style={{ backgroundColor: getColor(val) }}>
-                        {val}
-                    </div>
-                ))}
+                <ListNodes node={merged} backgroundColor={getColor} />
             </div>
         </div>
     );
