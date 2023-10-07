@@ -101,12 +101,14 @@ const LinkedListExample = () => {
 
     return (
         <div>
+            <h4>Just a Linked List</h4>
             <div className={classes.center}>
                 <button onClick={onClickReverse}>Reverse</button>
             </div>
             <div className={classes.list}>
                 <ListNodes node={list} i={0} />
             </div>
+            <h4>Looping Linked List</h4>
             <div className={classes.list}>
                 <ListNodes node={loopingList} i={0} getHighlight={getHighlight} endAfter={numItems} />
             </div>
