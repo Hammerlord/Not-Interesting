@@ -14,17 +14,22 @@ const nodeStyles = createUseStyles({
     },
 });
 
-const ListNodes = ({ node, i = 0, backgroundColor }) => {
+const ListNodes = ({ node, i = 0, backgroundColor, getHighlight, endAfter }) => {
     const classes = nodeStyles();
-    if (!node) {
+    if (!node || i >= endAfter) {
         return null;
     }
+
+    const bg = (backgroundColor && backgroundColor(node.val)) || (getHighlight && getHighlight(node));
+
     return (
         <>
-            <div className={classes.node} key={i} style={{ backgroundColor: backgroundColor && backgroundColor(node.val) }}>
+            <div className={classes.node} key={i} style={{ backgroundColor: bg }}>
                 {node.val}
             </div>
-            {node.next && <ListNodes node={node.next} key={i + 1} backgroundColor={backgroundColor} />}
+            {node.next && (
+                <ListNodes node={node.next} i={i + 1} backgroundColor={backgroundColor} getHighlight={getHighlight} endAfter={endAfter} />
+            )}
         </>
     );
 };

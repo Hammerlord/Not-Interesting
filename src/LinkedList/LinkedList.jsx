@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getRandomInt } from "../utils";
 import { createUseStyles } from "react-jss";
 import ListNodes from "./ListNodes";
 
-const createLinkedList = (length = 15) => {
+const createLinkedList = ({ length = 15, isLooping = false }) => {
     let head = null;
     let current = head;
 
@@ -17,6 +17,10 @@ const createLinkedList = (length = 15) => {
             current = current.next;
         }
     });
+
+    if (isLooping) {
+        current.next = head;
+    }
 
     return head;
 };
@@ -43,8 +47,23 @@ const useStyles = createUseStyles({
     },
 });
 
+const numItems = 15;
+
 const LinkedListExample = () => {
-    const [list, setList] = useState(createLinkedList(16));
+    const [list, setList] = useState(createLinkedList({ length: numItems }));
+    const [loopingList] = useState(createLinkedList({ length: numItems, isLooping: true }));
+    const [loopI, setLoopI] = useState(loopingList);
+    const [loopJ, setLoopJ] = useState(loopingList);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setLoopI(loopI.next);
+            setLoopJ(loopJ.next.next);
+        }, 500);
+
+        return () => clearInterval(interval);
+    }, [loopI, loopJ]);
+
     const classes = useStyles();
 
     const onClickReverse = () => {
@@ -66,6 +85,20 @@ const LinkedListExample = () => {
         }
     };
 
+    const getHighlight = (node) => {
+        if (node === loopI && node === loopJ) {
+            return "lime";
+        }
+
+        if (node === loopI) {
+            return "yellow";
+        }
+
+        if (node === loopJ) {
+            return "#55ccee";
+        }
+    };
+
     return (
         <div>
             <div className={classes.center}>
@@ -73,6 +106,9 @@ const LinkedListExample = () => {
             </div>
             <div className={classes.list}>
                 <ListNodes node={list} i={0} />
+            </div>
+            <div className={classes.list}>
+                <ListNodes node={loopingList} i={0} getHighlight={getHighlight} endAfter={numItems} />
             </div>
         </div>
     );
