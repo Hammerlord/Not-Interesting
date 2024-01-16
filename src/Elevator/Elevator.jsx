@@ -150,8 +150,11 @@ const Elevator = () => {
 
                     return true;
                 });
+
+                if (floorsCopy[currentElevatorFloor].length !== floors[currentElevatorFloor].length) {
+                    setFloors(floorsCopy.slice());
+                }
                 updatePassengersOnlyIfChanged();
-                setFloors(floorsCopy.slice());
 
                 // Check if the service queue (button presses) have been serviced by the elevator arriving at this floor
                 setServiceQueue(
@@ -171,13 +174,13 @@ const Elevator = () => {
             floorsCopy[floor].push(destinationFloor);
             setFloors(floorsCopy.slice());
             setServiceQueue([...serviceQueue, { floor, direction: destinationFloor > floor ? 1 : -1 }]);
-        }, getRandomInt(1, 5) * 1000);
+        }, getRandomInt(200, 2000));
 
         return () => {
             clearInterval(incrementElevator);
             clearInterval(spawnPerson);
         };
-    }, [floors, passengers, serviceQueue, currentElevatorFloor]);
+    }, [passengers, serviceQueue, currentElevatorFloor]);
 
     let direction;
     if (passengers.length) {
