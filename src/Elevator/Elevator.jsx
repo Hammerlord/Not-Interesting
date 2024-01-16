@@ -70,102 +70,90 @@ const Elevator = () => {
 
     const classes = useStyles();
 
-    const moveElevator = (direction) => {
-        setCurrentElevatorFloor((prev) => {
-            const newFloor = prev + direction;
+    useEffect(() => {
+        /**
+         * Tricky: States are soft copied here to be mutated by the two setIntervals.
+         * This is to a) ensure states are always up to date for each interval b) enable an empty dependency array so that the intervals don't interrupt each other when updating state.
+         */
+        let floorsCopy = floors.slice();
+        let queue = serviceQueue.slice();
+        let currentFloor = currentElevatorFloor;
+        let updatedPassengers = passengers.slice();
+
+        const moveElevator = (direction) => {
+            const newFloor = currentFloor + direction;
             if (newFloor > -1 && newFloor < floors.length) {
-                return newFloor;
+                currentFloor = newFloor;
+                setCurrentElevatorFloor(currentFloor);
+            }
+        };
+
+        const incrementElevator = setInterval(() => {
+            // Passengers who have reached their destination disembark
+            updatedPassengers = updatedPassengers.filter((p) => p !== currentFloor);
+            setPassengers(updatedPassengers);
+
+            if (queue.length === 0 && updatedPassengers.length === 0) {
+                if (currentFloor > 0) {
+                    moveElevator(-1);
+                }
+
+                return;
             }
 
-            return prev;
-        });
-    };
+            if (updatedPassengers.length === 0) {
+                const { floor, direction } = queue[0];
 
-    useEffect(() => {
-        let floorsCopy = floors.slice();
+                // Go to where our first passenger will be
+                let farthestRequestInDirection = queue[0];
 
-        const isDisembarking = passengers.some((p) => p === currentElevatorFloor);
-
-        const incrementElevator = setInterval(
-            () => {
-                // Passengers who have reached their destination disembark
-                const updatedPassengers = passengers.filter((p) => p !== currentElevatorFloor);
-
-                const updatePassengersOnlyIfChanged = () => {
-                    if (JSON.stringify(updatedPassengers) !== JSON.stringify(passengers)) {
-                        setPassengers(updatedPassengers);
+                for (const request of queue) {
+                    const isFartherAwayInDirection = direction === -1 ? floor < request.floor : request.floor > floor;
+                    if (direction === request.direction && isFartherAwayInDirection) {
+                        farthestRequestInDirection = request;
                     }
-                };
+                }
 
-                if (serviceQueue.length === 0 && updatedPassengers.length === 0) {
-                    if (currentElevatorFloor > 0) {
-                        // Start returning to ground floor
-                        setCurrentElevatorFloor((prev) => prev - 1);
-                    }
-
-                    updatePassengersOnlyIfChanged();
+                if (currentFloor !== farthestRequestInDirection.floor) {
+                    moveElevator(currentFloor > farthestRequestInDirection.floor ? -1 : 1);
                     return;
                 }
+            } else {
+                // Move the elevator in the direction that the passengers need
+                moveElevator(updatedPassengers[0] < currentFloor ? -1 : 1);
+            }
 
-                if (updatedPassengers.length === 0) {
-                    const { floor, direction } = serviceQueue[0];
+            let direction;
+            if (updatedPassengers.length) {
+                direction = updatedPassengers[0] < currentFloor ? -1 : 1;
+            } else if (queue.length) {
+                direction = queue[0].direction;
+            }
 
-                    // Go to where our first passenger will be
-                    let farthestRequestInDirection = serviceQueue[0];
+            const shouldGetOnElevator = (passengerDestination) => {
+                const passengerTravelingDirection = passengerDestination > currentFloor ? 1 : -1;
+                return passengerTravelingDirection === direction || updatedPassengers.length === 0;
+            };
 
-                    for (const request of serviceQueue) {
-                        const isFartherAwayInDirection = direction === -1 ? floor < request.floor : request.floor > floor;
-                        if (direction === request.direction && isFartherAwayInDirection) {
-                            farthestRequestInDirection = request;
-                        }
-                    }
-
-                    if (currentElevatorFloor !== farthestRequestInDirection.floor) {
-                        moveElevator(currentElevatorFloor > farthestRequestInDirection.floor ? -1 : 1);
-                        updatePassengersOnlyIfChanged();
-                        return;
-                    }
-                } else {
-                    // Move the elevator in the direction that the passengers need
-                    moveElevator(updatedPassengers[0] < currentElevatorFloor ? -1 : 1);
+            floorsCopy[currentFloor] = floorsCopy[currentFloor].filter((p) => {
+                if (shouldGetOnElevator(p)) {
+                    updatedPassengers.push(p);
+                    return false;
                 }
 
-                let direction;
-                if (updatedPassengers.length) {
-                    direction = updatedPassengers[0] < currentElevatorFloor ? -1 : 1;
-                } else if (serviceQueue.length) {
-                    direction = serviceQueue[0].direction;
-                }
+                return true;
+            });
 
-                const shouldGetOnElevator = (passengerDestination) => {
-                    const passengerTravelingDirection = passengerDestination > currentElevatorFloor ? 1 : -1;
-                    return passengerTravelingDirection === direction;
-                };
+            setFloors(floorsCopy.slice());
+            setPassengers(updatedPassengers);
 
-                floorsCopy[currentElevatorFloor] = floors[currentElevatorFloor].filter((p) => {
-                    if (shouldGetOnElevator(p)) {
-                        updatedPassengers.push(p);
-                        return false;
-                    }
-
-                    return true;
-                });
-
-                if (floorsCopy[currentElevatorFloor].length !== floors[currentElevatorFloor].length) {
-                    setFloors(floorsCopy.slice());
-                }
-                updatePassengersOnlyIfChanged();
-
-                // Check if the service queue (button presses) have been serviced by the elevator arriving at this floor
-                setServiceQueue(
-                    serviceQueue.filter(({ floor, direction: d }) => {
-                        const isServiced = floor === currentElevatorFloor && d === direction;
-                        return !isServiced;
-                    })
-                );
-            },
-            isDisembarking ? 800 : 300
-        );
+            // Check if the service queue (button presses) have been serviced by the elevator arriving at this floor
+            queue = queue.filter(({ floor, direction: d }) => {
+                const isServiced = floor === currentFloor && d === direction;
+                return !isServiced;
+            });
+            setServiceQueue(queue);
+        }, 500);
 
         const spawnPerson = setInterval(() => {
             const floor = getRandomInt(0, NUM_FLOORS - 1);
@@ -173,14 +161,15 @@ const Elevator = () => {
             const destinationFloor = createPerson(floor);
             floorsCopy[floor].push(destinationFloor);
             setFloors(floorsCopy.slice());
-            setServiceQueue([...serviceQueue, { floor, direction: destinationFloor > floor ? 1 : -1 }]);
-        }, getRandomInt(200, 2000));
+            queue = [...queue, { floor, direction: destinationFloor > floor ? 1 : -1 }];
+            setServiceQueue(queue);
+        }, 2500);
 
         return () => {
             clearInterval(incrementElevator);
             clearInterval(spawnPerson);
         };
-    }, [passengers, serviceQueue, currentElevatorFloor]);
+    }, []);
 
     let direction;
     if (passengers.length) {
